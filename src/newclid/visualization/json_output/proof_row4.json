@@ -1,0 +1,270 @@
+{
+  "nodes": [
+    {
+      "id": "007",
+      "type": "derived_fact",
+      "label": "simtrir c e f f e c [007]",
+      "layer": 5,
+      "shape": "box"
+    },
+    {
+      "id": "012",
+      "type": "derived_fact",
+      "label": "eqangle c e d e d e e f [012]",
+      "layer": 7,
+      "shape": "box"
+    },
+    {
+      "id": "003",
+      "type": "initial_fact",
+      "label": "coll b c g [003]",
+      "layer": 7,
+      "shape": "ellipse"
+    },
+    {
+      "id": "004",
+      "type": "initial_fact",
+      "label": "sameclock c e f c e f [004]",
+      "layer": 3,
+      "shape": "ellipse"
+    },
+    {
+      "id": "001",
+      "type": "initial_fact",
+      "label": "cong c e e f [001]",
+      "layer": 1,
+      "shape": "ellipse"
+    },
+    {
+      "id": "002",
+      "type": "initial_fact",
+      "label": "perp a g b c [002]",
+      "layer": 7,
+      "shape": "ellipse"
+    },
+    {
+      "id": "008",
+      "type": "derived_fact",
+      "label": "eqangle c e c f c f e f [008]",
+      "layer": 7,
+      "shape": "box"
+    },
+    {
+      "id": "013",
+      "type": "derived_fact",
+      "label": "eqangle a g c f c g d e [013]",
+      "layer": 9,
+      "shape": "box"
+    },
+    {
+      "id": "005",
+      "type": "initial_fact",
+      "label": "sameclock c d e d f e [005]",
+      "layer": 3,
+      "shape": "ellipse"
+    },
+    {
+      "id": "006",
+      "type": "derived_fact",
+      "label": "eqratio c e c f e f c f [006]",
+      "layer": 3,
+      "shape": "box"
+    },
+    {
+      "id": "010",
+      "type": "derived_fact",
+      "label": "eqratio c e d e e f d e [010]",
+      "layer": 3,
+      "shape": "box"
+    },
+    {
+      "id": "011",
+      "type": "derived_fact",
+      "label": "simtrir c d e f d e [011]",
+      "layer": 5,
+      "shape": "box"
+    },
+    {
+      "id": "000",
+      "type": "initial_fact",
+      "label": "cong c d d f [000]",
+      "layer": 1,
+      "shape": "ellipse"
+    },
+    {
+      "id": "009",
+      "type": "derived_fact",
+      "label": "eqratio c d d e d f d e [009]",
+      "layer": 3,
+      "shape": "box"
+    },
+    {
+      "id": "r_a01_1",
+      "type": "rule",
+      "label": "a01_1",
+      "layer": 8,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_r53_1",
+      "type": "rule",
+      "label": "r53_1",
+      "layer": 6,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_r53_2",
+      "type": "rule",
+      "label": "r53_2",
+      "layer": 6,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_r61_2",
+      "type": "rule",
+      "label": "r61_2",
+      "layer": 4,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_a00_1",
+      "type": "rule",
+      "label": "a00_1",
+      "layer": 2,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_r61_1",
+      "type": "rule",
+      "label": "r61_1",
+      "layer": 4,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_a00_3",
+      "type": "rule",
+      "label": "a00_3",
+      "layer": 2,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_a00_2",
+      "type": "rule",
+      "label": "a00_2",
+      "layer": 2,
+      "shape": "diamond"
+    }
+  ],
+  "links": [
+    {
+      "source": "001",
+      "target": "r_a00_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a00_1",
+      "target": "006",
+      "type": "derivation"
+    },
+    {
+      "source": "006",
+      "target": "r_r61_1",
+      "type": "derivation"
+    },
+    {
+      "source": "004",
+      "target": "r_r61_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_r61_1",
+      "target": "007",
+      "type": "derivation"
+    },
+    {
+      "source": "007",
+      "target": "r_r53_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_r53_1",
+      "target": "008",
+      "type": "derivation"
+    },
+    {
+      "source": "000",
+      "target": "r_a00_2",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a00_2",
+      "target": "009",
+      "type": "derivation"
+    },
+    {
+      "source": "001",
+      "target": "r_a00_3",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a00_3",
+      "target": "010",
+      "type": "derivation"
+    },
+    {
+      "source": "009",
+      "target": "r_r61_2",
+      "type": "derivation"
+    },
+    {
+      "source": "010",
+      "target": "r_r61_2",
+      "type": "derivation"
+    },
+    {
+      "source": "005",
+      "target": "r_r61_2",
+      "type": "derivation"
+    },
+    {
+      "source": "r_r61_2",
+      "target": "011",
+      "type": "derivation"
+    },
+    {
+      "source": "011",
+      "target": "r_r53_2",
+      "type": "derivation"
+    },
+    {
+      "source": "r_r53_2",
+      "target": "012",
+      "type": "derivation"
+    },
+    {
+      "source": "003",
+      "target": "r_a01_1",
+      "type": "derivation"
+    },
+    {
+      "source": "008",
+      "target": "r_a01_1",
+      "type": "derivation"
+    },
+    {
+      "source": "012",
+      "target": "r_a01_1",
+      "type": "derivation"
+    },
+    {
+      "source": "002",
+      "target": "r_a01_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a01_1",
+      "target": "013",
+      "type": "derivation"
+    }
+  ]
+}

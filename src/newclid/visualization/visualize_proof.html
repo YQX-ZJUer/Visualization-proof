@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Visualization with D3.js</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        neutral: '#64748B',
+                        initial: '#3B82F6',
+                        derived: '#10B981',
+                        rule: '#F59E0B',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .node-label {
+                font-size: 10px;
+                text-anchor: middle;
+                pointer-events: none;
+            }
+            .link {
+                stroke-opacity: 0.6;
+            }
+            .tooltip {
+                @apply absolute bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none opacity-0 transition-opacity duration-200;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800">Graph Visualization</h1>
+            <p class="text-gray-600">Visualizing nodes and links using D3.js</p>
+        </header>
+        
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex flex-wrap gap-4 mb-4">
+                <div class="flex items-center">
+                    <svg width="20" height="20" class="mr-2">
+                        <ellipse cx="10" cy="10" rx="8" ry="5" fill="#3B82F6" />
+                    </svg>
+                    <span class="text-sm text-gray-700">Initial Fact</span>
+                </div>
+                <div class="flex items-center">
+                    <svg width="20" height="20" class="mr-2">
+                        <rect x="2" y="2" width="16" height="16" fill="#10B981" />
+                    </svg>
+                    <span class="text-sm text-gray-700">Derived Fact</span>
+                </div>
+                <div class="flex items-center">
+                    <svg width="20" height="20" class="mr-2">
+                        <polygon points="10,2 18,10 10,18 2,10" fill="#F59E0B" />
+                    </svg>
+                    <span class="text-sm text-gray-700">Rule</span>
+                </div>
+                <div class="flex items-center ml-auto">
+                    <button id="zoomIn" class="bg-primary hover:bg-primary/80 text-white p-2 rounded mr-2 transition-colors">
+                        <i class="fa fa-search-plus"></i>
+                    </button>
+                    <button id="zoomOut" class="bg-primary hover:bg-primary/80 text-white p-2 rounded mr-2 transition-colors">
+                        <i class="fa fa-search-minus"></i>
+                    </button>
+                    <button id="resetView" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded transition-colors">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg overflow-hidden" style="height: 70vh;">
+                <svg id="graph-svg" class="w-full h-full"></svg>
+                <div id="tooltip" class="tooltip"></div>
+            </div>
+        </div>
+        
+        <footer class="text-center text-gray-500 text-sm">
+            <p>Interactive graph visualization using D3.js | Drag nodes to rearrange | Zoom with mouse wheel</p>
+        </footer>
+    </div>
+
+    <script>
+        // 您提供的JSON数据
+        const graphData = {
+            "nodes": [
+                { "id": "001", "type": "initial_fact", "label": "cong c e e f [001]", "layer": 1, "shape": "ellipse" },
+                { "id": "002", "type": "initial_fact", "label": "perp a g b c [002]", "layer": 7, "shape": "ellipse" },
+                { "id": "004", "type": "initial_fact", "label": "sameclock c e f c e f [004]", "layer": 3, "shape": "ellipse" },
+                { "id": "005", "type": "initial_fact", "label": "sameclock c d e d f e [005]", "layer": 3, "shape": "ellipse" },
+                { "id": "013", "type": "derived_fact", "label": "eqangle a g c f c g d e [013]", "layer": 9, "shape": "box" },
+                { "id": "000", "type": "initial_fact", "label": "cong c d d f [000]", "layer": 1, "shape": "ellipse" },
+                { "id": "012", "type": "derived_fact", "label": "eqangle c e d e d e e f [012]", "layer": 7, "shape": "box" },
+                { "id": "008", "type": "derived_fact", "label": "eqangle c e c f c f e f [008]", "layer": 7, "shape": "box" },
+                { "id": "007", "type": "derived_fact", "label": "simtrir c e f f e c [007]", "layer": 5, "shape": "box" },
+                { "id": "006", "type": "derived_fact", "label": "eqratio c e c f e f c f [006]", "layer": 3, "shape": "box" },
+                { "id": "009", "type": "derived_fact", "label": "eqratio c d d e d f d e [009]", "layer": 3, "shape": "box" },
+                { "id": "010", "type": "derived_fact", "label": "eqratio c e d e e f d e [010]", "layer": 3, "shape": "box" },
+                { "id": "011", "type": "derived_fact", "label": "simtrir c d e f d e [011]", "layer": 5, "shape": "box" },
+                { "id": "003", "type": "initial_fact", "label": "coll b c g [003]", "layer": 7, "shape": "ellipse" },
+                { "id": "r_r53_1", "type": "rule", "label": "r53_1", "layer": 6, "shape": "diamond" },
+                { "id": "r_r61_1", "type": "rule", "label": "r61_1", "layer": 4, "shape": "diamond" },
+                { "id": "r_a01_1", "type": "rule", "label": "a01_1", "layer": 8, "shape": "diamond" },
+                { "id": "r_a00_1", "type": "rule", "label": "a00_1", "layer": 2, "shape": "diamond" },
+                { "id": "r_a00_2", "type": "rule", "label": "a00_2", "layer": 2, "shape": "diamond" },
+                { "id": "r_r53_2", "type": "rule", "label": "r53_2", "layer": 6, "shape": "diamond" },
+                { "id": "r_r61_2", "type": "rule", "label": "r61_2", "layer": 4, "shape": "diamond" },
+                { "id": "r_a00_3", "type": "rule", "label": "a00_3", "layer": 2, "shape": "diamond" }
+            ],
+            "links": [
+                { "source": "001", "target": "r_a00_1", "type": "derivation" },
+                { "source": "r_a00_1", "target": "006", "type": "derivation" },
+                { "source": "006", "target": "r_r61_1", "type": "derivation" },
+                { "source": "004", "target": "r_r61_1", "type": "derivation" },
+                { "source": "r_r61_1", "target": "007", "type": "derivation" },
+                { "source": "007", "target": "r_r53_1", "type": "derivation" },
+                { "source": "r_r53_1", "target": "008", "type": "derivation" },
+                { "source": "000", "target": "r_a00_2", "type": "derivation" },
+                { "source": "r_a00_2", "target": "009", "type": "derivation" },
+                { "source": "001", "target": "r_a00_3", "type": "derivation" },
+                { "source": "r_a00_3", "target": "010", "type": "derivation" },
+                { "source": "009", "target": "r_r61_2", "type": "derivation" },
+                { "source": "010", "target": "r_r61_2", "type": "derivation" },
+                { "source": "005", "target": "r_r61_2", "type": "derivation" },
+                { "source": "r_r61_2", "target": "011", "type": "derivation" },
+                { "source": "011", "target": "r_r53_2", "type": "derivation" },
+                { "source": "r_r53_2", "target": "012", "type": "derivation" },
+                { "source": "003", "target": "r_a01_1", "type": "derivation" },
+                { "source": "008", "target": "r_a01_1", "type": "derivation" },
+                { "source": "012", "target": "r_a01_1", "type": "derivation" },
+                { "source": "002", "target": "r_a01_1", "type": "derivation" },
+                { "source": "r_a01_1", "target": "013", "type": "derivation" }
+            ]
+        };
+
+        // 设置SVG尺寸和边距
+        const svg = d3.select("#graph-svg");
+        const width = svg.node().parentElement.clientWidth;
+        const height = svg.node().parentElement.clientHeight;
+        
+        // 创建缩放行为
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // 创建一个容器用于应用缩放变换
+        const g = svg.append("g");
+        
+        // 定义节点颜色
+        const nodeColor = (d) => {
+            switch(d.type) {
+                case "initial_fact": return "#3B82F6"; // 蓝色
+                case "derived_fact": return "#10B981"; // 绿色
+                case "rule": return "#F59E0B"; // 橙色
+                default: return "#64748B"; // 灰色
+            }
+        };
+        
+        // 创建力导向图布局
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide().radius(60));
+        
+        // 绘制连接线
+        const link = g.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(graphData.links)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 1.5);
+        
+        // 创建节点组
+        const node = g.append("g")
+            .attr("class", "nodes")
+            .selectAll(".node")
+            .data(graphData.nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+        
+        // 根据节点形状属性绘制不同的图形
+        node.each(function(d) {
+            const element = d3.select(this);
+            const size = d.type === "rule" ? 25 : 30;
+            
+            switch(d.shape) {
+                case "ellipse":
+                    element.append("ellipse")
+                        .attr("rx", size / 2)
+                        .attr("ry", size / 3)
+                        .attr("fill", nodeColor(d))
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5);
+                    break;
+                case "box":
+                    element.append("rect")
+                        .attr("width", size)
+                        .attr("height", size)
+                        .attr("x", -size / 2)
+                        .attr("y", -size / 2)
+                        .attr("fill", nodeColor(d))
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5);
+                    break;
+                case "diamond":
+                    element.append("polygon")
+                        .attr("points", `0,-${size/2} ${size/2},0 0,${size/2} -${size/2},0`)
+                        .attr("fill", nodeColor(d))
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5);
+                    break;
+            }
+        });
+        
+        // 添加节点标签
+        node.append("text")
+            .attr("class", "node-label")
+            .attr("dy", 40)
+            .text(d => d.label);
+        
+        //  tooltip交互
+        const tooltip = d3.select("#tooltip");
+        
+        node.on("mouseover", (event, d) => {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(`
+                <div class="font-semibold">ID: ${d.id}</div>
+                <div>Type: ${d.type}</div>
+                <div>Layer: ${d.layer}</div>
+                <div class="mt-1">${d.label}</div>
+            `)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+        
+        // 更新力导向图
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+            
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+        
+        // 拖拽功能
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        // 缩放控制按钮
+        document.getElementById("zoomIn").addEventListener("click", () => {
+            svg.transition().call(zoom.scaleBy, 1.3);
+        });
+        
+        document.getElementById("zoomOut").addEventListener("click", () => {
+            svg.transition().call(zoom.scaleBy, 0.7);
+        });
+        
+        document.getElementById("resetView").addEventListener("click", () => {
+            svg.transition().call(zoom.transform, d3.zoomIdentity);
+            simulation.alpha(1).restart();
+        });
+        
+        // 响应窗口大小变化
+        window.addEventListener("resize", () => {
+            const newWidth = svg.node().parentElement.clientWidth;
+            const newHeight = svg.node().parentElement.clientHeight;
+            
+            simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
+            simulation.alpha(0.3).restart();
+        });
+    </script>
+</body>
+</html>
