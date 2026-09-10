@@ -441,5 +441,6 @@ def visualize_single_proof(data_path, row_idx=0):
 
 
 if __name__ == "__main__":
-    DATA_PATH = "/root/autodl-tmp/yaoqixu/NewclidZJU/src/newclid/generation/dataset/geometry_clauses15_samples10k.jsonl"
-    visualize_single_proof(DATA_PATH, row_idx=4)
+    # DATA_PATH = "/root/autodl-tmp/yaoqixu/NewclidZJU/src/newclid/generation/dataset/geometry_clauses15_samples10k.jsonl"
+    DATA_PATH = "/root/Desktop/我的网盘/project/Visualization-proof/src/newclid/generation/dataset/geometry_clauses15_samples10k.jsonl"
+    visualize_single_proof(DATA_PATH, row_idx=0)

@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "003",
+      "type": "derived_fact",
+      "label": "eqangle a c b d c d c d [003]",
+      "layer": 3,
+      "shape": "box"
+    },
+    {
+      "id": "000",
+      "type": "initial_fact",
+      "label": "para a c b d [000]",
+      "layer": 1,
+      "shape": "ellipse"
+    },
+    {
+      "id": "004",
+      "type": "derived_fact",
+      "label": "eqangle a d b c c d c d [004]",
+      "layer": 3,
+      "shape": "box"
+    },
+    {
+      "id": "002",
+      "type": "initial_fact",
+      "label": "sameclock a c d b d c [002]",
+      "layer": 3,
+      "shape": "ellipse"
+    },
+    {
+      "id": "005",
+      "type": "derived_fact",
+      "label": "simtri a c d b d c [005]",
+      "layer": 5,
+      "shape": "box"
+    },
+    {
+      "id": "001",
+      "type": "initial_fact",
+      "label": "para a d b c [001]",
+      "layer": 1,
+      "shape": "ellipse"
+    },
+    {
+      "id": "r_a01_1",
+      "type": "rule",
+      "label": "a01_1",
+      "layer": 2,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_r34_1",
+      "type": "rule",
+      "label": "r34_1",
+      "layer": 4,
+      "shape": "diamond"
+    },
+    {
+      "id": "r_a01_2",
+      "type": "rule",
+      "label": "a01_2",
+      "layer": 2,
+      "shape": "diamond"
+    }
+  ],
+  "links": [
+    {
+      "source": "000",
+      "target": "r_a01_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a01_1",
+      "target": "003",
+      "type": "derivation"
+    },
+    {
+      "source": "001",
+      "target": "r_a01_2",
+      "type": "derivation"
+    },
+    {
+      "source": "r_a01_2",
+      "target": "004",
+      "type": "derivation"
+    },
+    {
+      "source": "003",
+      "target": "r_r34_1",
+      "type": "derivation"
+    },
+    {
+      "source": "004",
+      "target": "r_r34_1",
+      "type": "derivation"
+    },
+    {
+      "source": "002",
+      "target": "r_r34_1",
+      "type": "derivation"
+    },
+    {
+      "source": "r_r34_1",
+      "target": "005",
+      "type": "derivation"
+    }
+  ]
+}
