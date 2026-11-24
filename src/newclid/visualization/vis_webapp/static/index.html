@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>几何证明可视化 Web 应用</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --green: #10b981;
+            --orange: #f59e0b;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { margin-bottom: 20px; }
+        header h1 { font-size: 1.6rem; font-weight: 700; }
+        header p { color: var(--muted); margin-top: 4px; font-size: .92rem; }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card h2 { font-size: 1rem; margin-bottom: 10px; color: #334155; }
+
+        .control-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        label { font-size: .9rem; color: var(--muted); }
+        input[type="number"] {
+            width: 110px; padding: 8px 10px; border: 1px solid var(--border);
+            border-radius: 6px; font-size: .95rem;
+        }
+        button {
+            padding: 8px 16px; border: none; border-radius: 6px;
+            font-size: .92rem; cursor: pointer; color: #fff; transition: opacity .15s;
+        }
+        button:hover { opacity: .85; }
+        button:disabled { opacity: .45; cursor: not-allowed; }
+        .btn-blue { background: var(--primary); }
+        .btn-gray { background: #64748b; }
+        .btn-green { background: var(--green); }
+        .btn-orange { background: var(--orange); }
+        .meta { font-size: .85rem; color: var(--muted); }
+        .meta b { color: #334155; }
+
+        pre.code {
+            background: #0f172a; color: #e2e8f0; border-radius: 8px;
+            padding: 14px; font-size: .82rem; line-height: 1.55;
+            max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+            font-family: "JetBrains Mono", Consolas, monospace;
+        }
+        .empty-tip { color: var(--muted); font-size: .9rem; padding: 24px 0; text-align: center; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+        .tab-btn {
+            background: #e2e8f0; color: #475569; padding: 6px 18px;
+            border-radius: 6px; border: none; cursor: pointer; font-size: .88rem;
+        }
+        .tab-btn.active { background: var(--primary); color: #fff; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .svg-wrap {
+            border: 1px solid var(--border); border-radius: 8px; background: #fff;
+            padding: 10px; overflow: auto; max-height: 75vh;
+        }
+        .svg-wrap svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+        .graph-wrap {
+            border: 1px solid var(--border); border-radius: 8px; background: #fff;
+            height: 70vh; position: relative; overflow: hidden;
+        }
+        #graph-svg { width: 100%; height: 100%; }
+        .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: .82rem; color: #475569; align-items: center; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-shape { display: inline-block; }
+        .node-label { font-size: 10px; text-anchor: middle; pointer-events: none; fill: #0f172a; }
+        .link { stroke: #94a3b8; stroke-opacity: .6; }
+        #tooltip {
+            position: absolute; background: rgba(15,23,42,.92); color: #f1f5f9;
+            font-size: .78rem; border-radius: 6px; padding: 8px 10px;
+            pointer-events: none; opacity: 0; transition: opacity .2s; max-width: 320px; z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,.2); white-space: pre-line;
+        }
+        .graph-ctrl { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 5; }
+        .graph-ctrl button {
+            width: 32px; height: 32px; border-radius: 6px; background: #fff;
+            border: 1px solid var(--border); color: #334155; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .status-msg { margin-left: auto; font-size: .85rem; }
+        .status-msg.err { color: #dc2626; }
+        .status-msg.ok { color: #059669; }
+
+        .mode-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 14px; }
+        .mode-btn {
+            background: #e2e8f0; color: #475569; padding: 6px 18px;
+            border-radius: 6px; border: none; cursor: pointer; font-size: .88rem;
+        }
+        .mode-btn.active { background: var(--primary); color: #fff; }
+        textarea {
+            width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: .82rem; line-height: 1.5; resize: vertical;
+            font-family: "JetBrains Mono", Consolas, monospace; background: #f8fafc;
+        }
+        .custom-field { margin-bottom: 10px; }
+        .custom-field label { display: block; margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>几何证明可视化 Web 应用</h1>
+        <p>输入题目行号 → 查看 JSONL 原始数据 → 生成证明推导 SVG 图或 D3.js 交互图
+           · <a href="/mining" style="color:#2563eb">规则复用与频繁子图挖掘 →</a></p>
+    </header>
+
+    <!-- 控制区 -->
+    <div class="card">
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="row" id="modeRow">按行号</button>
+            <button class="mode-btn" data-mode="custom" id="modeCustom">自定义输入</button>
+            <span class="status-msg" id="statusMsg"></span>
+        </div>
+
+        <!-- 模式一：按行号 -->
+        <div id="rowMode">
+            <div class="control-row">
+                <label for="rowIdx">题目行号</label>
+                <input type="number" id="rowIdx" min="0" value="0">
+                <button class="btn-blue" id="btnLoad">加载题目</button>
+                <button class="btn-green" id="btnSvg">生成 SVG 图</button>
+                <button class="btn-orange" id="btnD3">生成 D3 图</button>
+                <span class="meta" id="rangeInfo"></span>
+            </div>
+        </div>
+
+        <!-- 模式二：自定义输入 -->
+        <div id="customMode" style="display:none;">
+            <div class="custom-field">
+                <label for="customInput">llm_input（<problem> 初始事实与目标）</label>
+                <textarea id="customInput" rows="3" spellcheck="false"></textarea>
+            </div>
+            <div class="custom-field">
+                <label for="customOutput">llm_output（<numerical_check> 补充事实 ＋ <proof> 推导步骤）</label>
+                <textarea id="customOutput" rows="5" spellcheck="false"></textarea>
+            </div>
+            <div class="control-row">
+                <button class="btn-green" id="btnCustomSvg">生成 SVG 图</button>
+                <button class="btn-orange" id="btnCustomD3">生成 D3 图</button>
+                <button class="btn-gray" id="btnCustomExample">填入示例</button>
+                <span class="meta">格式：&lt;problem&gt;…&lt;/problem&gt; ｜ &lt;numerical_check&gt;…&lt;/numerical_check&gt; ｜ &lt;proof&gt; 结论 [编号] 规则名 [前提编号]…&lt;/proof&gt;</span>
+            </div>
+        </div>
+
+        <div class="legend" style="margin-top:10px;">
+            <span class="legend-item"><span class="legend-shape"><svg width="26" height="16"><ellipse cx="13" cy="8" rx="12" ry="6" fill="#3b82f6"/></svg></span>初始事实</span>
+            <span class="legend-item"><span class="legend-shape"><svg width="16" height="16"><rect x="1" y="1" width="14" height="14" fill="#10b981"/></svg></span>推导事实</span>
+            <span class="legend-item"><span class="legend-shape"><svg width="18" height="18"><polygon points="9,1 17,9 9,17 1,9" fill="#f59e0b"/></svg></span>规则节点</span>
+            <span class="legend-item"><span class="legend-shape"><svg width="16" height="16"><rect x="1" y="1" width="14" height="14" fill="#ef4444" stroke="#b91c1c"/></svg></span>最终结论</span>
+        </div>
+    </div>
+
+    <!-- JSONL 显示区 -->
+    <div class="card">
+        <h2>题目 JSONL 数据</h2>
+        <div id="metaInfo" class="meta" style="margin-bottom:8px;"></div>
+        <pre class="code" id="jsonContent"><span class="empty-tip">尚未加载题目，请输入行号后点击「加载题目」</span></pre>
+    </div>
+
+    <!-- 图展示区 -->
+    <div class="card">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="svgTab">SVG 图</button>
+            <button class="tab-btn" data-tab="d3Tab">D3 交互图</button>
+        </div>
+        <div class="panel active" id="svgTab">
+            <div class="svg-wrap" id="svgWrap"><div class="empty-tip">点击「生成 SVG 图」查看证明推导流程</div></div>
+        </div>
+        <div class="panel" id="d3Tab">
+            <div class="graph-wrap">
+                <div class="graph-ctrl">
+                    <button id="zoomIn" title="放大">＋</button>
+                    <button id="zoomOut" title="缩小">－</button>
+                    <button id="resetView" title="复位">↺</button>
+                </div>
+                <svg id="graph-svg"></svg>
+                <div id="tooltip"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentRow = null;
+
+const $ = id => document.getElementById(id);
+const status = (msg, cls) => { $("statusMsg").textContent = msg; $("statusMsg").className = "status-msg " + (cls || ""); };
+
+function fmtJsonLine(raw) {
+    try {
+        const obj = JSON.parse(raw);
+        const lines = [];
+        for (const [k, v] of Object.entries(obj)) {
+            if (typeof v === "string") {
+                lines.push(`"${k}": ${JSON.stringify(v)}`);
+            } else {
+                lines.push(`"${k}": ${JSON.stringify(v)}`);
+            }
+        }
+        return "{\n  " + lines.join(",\n  ") + "\n}";
+    } catch (e) {
+        return raw;
+    }
+}
+
+function showMeta(data) {
+    const p = data.parsed || {};
+    const parts = [];
+    if (p.n_clauses !== undefined) parts.push(`子句数 ${p.n_clauses}`);
+    if (p.n_proof_steps !== undefined) parts.push(`证明步数 ${p.n_proof_steps}`);
+    if (p.problem !== undefined) parts.push(`fl_problem: ${String(p.problem).slice(0, 80)}…`);
+    $("metaInfo").innerHTML = parts.length
+        ? `当前：第 <b>${data.row_idx}</b> 行 / 共 ${data.total_rows} 行 ｜ ${parts.join(" ｜ ")}`
+        : `当前：第 <b>${data.row_idx}</b> 行 / 共 ${data.total_rows} 行`;
+}
+
+async function loadProblem() {
+    const idx = parseInt($("rowIdx").value, 10);
+    if (isNaN(idx) || idx < 0) { status("请输入有效的行号", "err"); return; }
+    status("加载中…");
+    try {
+        const res = await fetch(`/api/problem/${idx}`);
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        currentRow = data.row_idx;
+        $("jsonContent").textContent = fmtJsonLine(data.raw_line);
+        showMeta(data);
+        $("rowIdx").value = data.row_idx;
+        status(`题目 ${data.row_idx} 已加载`, "ok");
+    } catch (e) {
+        status("加载失败：" + e.message, "err");
+    }
+}
+
+// ---- SVG 图 ----
+async function genSvg() {
+    if (currentRow === null) { await loadProblem(); }
+    if (currentRow === null) return;
+    status("生成 SVG 中…");
+    const wrap = $("svgWrap");
+    wrap.innerHTML = '<div class="empty-tip">生成中…</div>';
+    try {
+        const res = await fetch(`/api/svg/${currentRow}`);
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || `HTTP ${res.status}`);
+        }
+        const svgText = await res.text();
+        wrap.innerHTML = svgText;
+        status("SVG 已生成", "ok");
+        switchTab("svgTab");
+    } catch (e) {
+        wrap.innerHTML = '<div class="empty-tip">SVG 生成失败</div>';
+        status("SVG 失败：" + e.message, "err");
+    }
+}
+
+// ---- D3 交互图 ----
+let simulation = null;
+
+function renderGraph(graphData) {
+    const svg = d3.select("#graph-svg");
+    const width = svg.node().parentElement.clientWidth || 800;
+    const height = svg.node().parentElement.clientHeight || 600;
+
+    svg.selectAll("*").remove();
+    if (simulation) simulation.stop();
+
+    const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (ev) => g.attr("transform", ev.transform));
+    svg.call(zoom);
+    const g = svg.append("g");
+
+    const isFinal = (d) => d.final || d.type === "final_fact";
+    const nodeColor = (d) => isFinal(d) ? "#ef4444"
+        : d.type === "initial_fact" ? "#3b82f6"
+        : d.type === "derived_fact" ? "#10b981" : "#f59e0b";
+
+    simulation = d3.forceSimulation(graphData.nodes)
+        .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(120))
+        .force("charge", d3.forceManyBody().strength(-400))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide().radius(70));
+
+    const link = g.append("g").attr("class", "links").selectAll("line")
+        .data(graphData.links).enter().append("line").attr("class", "link").attr("stroke-width", 1.5);
+
+    const node = g.append("g").attr("class", "nodes").selectAll(".node")
+        .data(graphData.nodes).enter().append("g").attr("class", "node")
+        .call(d3.drag()
+            .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    node.each(function (d) {
+        const el = d3.select(this);
+        const size = d.type === "rule" ? 26 : 32;
+        const strokeC = isFinal(d) ? "#b91c1c" : "#fff";
+        if (d.shape === "ellipse") {
+            el.append("ellipse").attr("rx", size).attr("ry", size * 0.55)
+              .attr("fill", nodeColor(d)).attr("stroke", strokeC).attr("stroke-width", isFinal(d) ? 2.5 : 1.5);
+        } else if (d.shape === "diamond") {
+            el.append("polygon").attr("points", `0,-${size} ${size},0 0,${size} -${size},0`)
+              .attr("fill", nodeColor(d)).attr("stroke", strokeC).attr("stroke-width", isFinal(d) ? 2.5 : 1.5);
+        } else {
+            el.append("rect").attr("width", size * 1.6).attr("height", size * 0.9)
+              .attr("x", -size * 0.8).attr("y", -size * 0.45)
+              .attr("fill", nodeColor(d)).attr("stroke", strokeC).attr("stroke-width", isFinal(d) ? 2.5 : 1.5);
+        }
+    });
+
+    node.append("text").attr("class", "node-label").attr("dy", d => d.shape === "diamond" ? -size(d) - 4 : 30)
+        .attr("fill", d => isFinal(d) ? "#dc2626" : "#0f172a")
+        .attr("font-weight", d => isFinal(d) ? "bold" : "normal")
+        .text(d => d.label);
+
+    function size(d) { return d.type === "rule" ? 26 : 32; }
+
+    const tooltip = $("tooltip");
+    node.on("mouseover", (event, d) => {
+        tooltip.style("opacity", .95);
+        tooltip.innerHTML = `<b>ID: ${d.id}</b>\n类型: ${d.type}${isFinal(d) ? "（最终结论）" : ""}\n层级: ${d.layer}\n${d.label}`;
+        tooltip.style.left = (event.pageX - tooltip.offsetWidth / 2) + "px";
+        tooltip.style.top = (event.pageY - 40) + "px";
+    }).on("mouseout", () => tooltip.style("opacity", 0));
+
+    simulation.on("tick", () => {
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    $("zoomIn").onclick = () => svg.transition().call(zoom.scaleBy, 1.3);
+    $("zoomOut").onclick = () => svg.transition().call(zoom.scaleBy, 0.7);
+    $("resetView").onclick = () => { svg.transition().call(zoom.transform, d3.zoomIdentity); simulation.alpha(1).restart(); };
+
+    window.addEventListener("resize", () => {
+        const w = svg.node().parentElement.clientWidth, h = svg.node().parentElement.clientHeight;
+        simulation.force("center", d3.forceCenter(w / 2, h / 2)).alpha(.3).restart();
+    });
+}
+
+async function genD3() {
+    if (currentRow === null) { await loadProblem(); }
+    if (currentRow === null) return;
+    status("加载 D3 数据中…");
+    try {
+        const res = await fetch(`/api/graph/${currentRow}`);
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || `HTTP ${res.status}`);
+        }
+        const graphData = await res.json();
+        // 先切换并显示 D3 面板，再渲染：确保容器有真实宽高（display:none 时量为 0 会导致节点堆叠在左上角不可见）
+        switchTab("d3Tab");
+        await new Promise(r => setTimeout(r, 60));
+        renderGraph(graphData);
+        status(`D3 图已生成（${graphData.nodes.length} 节点 / ${graphData.links.length} 边）`, "ok");
+    } catch (e) {
+        status("D3 失败：" + e.message, "err");
+    }
+}
+
+// ---- Tab 切换 ----
+function switchTab(name) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === name));
+}
+document.querySelectorAll(".tab-btn").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+// ---- 模式切换（按行号 / 自定义输入）----
+function switchMode(mode) {
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+    $("rowMode").style.display = mode === "row" ? "" : "none";
+    $("customMode").style.display = mode === "custom" ? "" : "none";
+}
+$("modeRow").addEventListener("click", () => switchMode("row"));
+$("modeCustom").addEventListener("click", () => switchMode("custom"));
+
+// ---- 自定义输入：SVG / D3 ----
+const CUSTOM_EXAMPLE_INPUT = "<problem> a : ; b : ; c : ; d : para a c b d [000] para a d b c [001] ? simtri a c d b d c </problem>";
+const CUSTOM_EXAMPLE_OUTPUT = "<numerical_check> sameclock a c d b d c [002] ; </numerical_check> <proof> eqangle a c b d c d c d [003] a01 [000] ; eqangle a d b c c d c d [004] a01 [001] ; simtri a c d b d c [005] r34 [003] [004] [002] ; </proof>";
+
+function customPayload() {
+    return JSON.stringify({ llm_input: $("customInput").value, llm_output: $("customOutput").value });
+}
+
+async function genCustomSvg() {
+    status("生成 SVG 中…");
+    const wrap = $("svgWrap");
+    wrap.innerHTML = '<div class="empty-tip">生成中…</div>';
+    try {
+        const res = await fetch("/api/custom/svg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: customPayload(),
+        });
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || `HTTP ${res.status}`);
+        }
+        const svgText = await res.text();
+        wrap.innerHTML = svgText;
+        status("SVG 已生成", "ok");
+        switchTab("svgTab");
+    } catch (e) {
+        wrap.innerHTML = '<div class="empty-tip">SVG 生成失败</div>';
+        status("SVG 失败：" + e.message, "err");
+    }
+}
+
+async function genCustomD3() {
+    status("加载 D3 数据中…");
+    try {
+        const res = await fetch("/api/custom/graph", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: customPayload(),
+        });
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || `HTTP ${res.status}`);
+        }
+        const graphData = await res.json();
+        switchTab("d3Tab");
+        await new Promise(r => setTimeout(r, 60));
+        renderGraph(graphData);
+        status(`D3 图已生成（${graphData.nodes.length} 节点 / ${graphData.links.length} 边）`, "ok");
+    } catch (e) {
+        status("D3 失败：" + e.message, "err");
+    }
+}
+
+// ---- 事件绑定 ----
+$("btnLoad").addEventListener("click", loadProblem);
+$("btnSvg").addEventListener("click", genSvg);
+$("btnD3").addEventListener("click", genD3);
+$("rowIdx").addEventListener("keydown", e => { if (e.key === "Enter") loadProblem(); });
+$("btnCustomSvg").addEventListener("click", genCustomSvg);
+$("btnCustomD3").addEventListener("click", genCustomD3);
+$("btnCustomExample").addEventListener("click", () => {
+    $("customInput").value = CUSTOM_EXAMPLE_INPUT;
+    $("customOutput").value = CUSTOM_EXAMPLE_OUTPUT;
+    status("已填入示例，可直接生成", "ok");
+});
+$("customInput").value = CUSTOM_EXAMPLE_INPUT;
+$("customOutput").value = CUSTOM_EXAMPLE_OUTPUT;
+
+// 初始化：加载题目总数
+(async () => {
+    try {
+        const res = await fetch("/api/problem/0");
+        const data = await res.json();
+        $("rangeInfo").textContent = `共 ${data.total_rows} 道题（0 ~ ${data.total_rows - 1}）`;
+    } catch (e) { /* 忽略 */ }
+})();
+</script>
+</body>
+</html>

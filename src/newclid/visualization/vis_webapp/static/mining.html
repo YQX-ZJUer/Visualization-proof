@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>规则复用与频繁子图挖掘</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7fb; --panel: #ffffff; --line: #e2e5ef;
+    --ink: #1c2333; --muted: #6b7488;
+    --fact: #4c78a8; --rule: #e45756; --final: #54a24b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--ink); }
+  header { background: #fff; border-bottom: 1px solid var(--line); padding: 14px 22px;
+           display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; margin: 0; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  header .meta b { color: var(--ink); }
+  main { display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px; padding: 16px 22px;
+         align-items: start; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+           padding: 14px 16px; }
+  .panel h2 { font-size: 15px; margin: 0 0 4px; }
+  .panel .sub { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .chart svg { display: block; width: 100%; }
+  .bar { cursor: pointer; }
+  .bar:hover rect { opacity: 0.85; }
+  .axis text { font-size: 11px; fill: var(--muted); }
+  .tick text { font-size: 10.5px; }
+  .bar-label { font-size: 10.5px; fill: #333; }
+  .detail-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+                 margin-top: 10px; background: #fafbfe; font-size: 13px; display: none; }
+  .detail-card.visible { display: block; }
+  .detail-card h3 { margin: 0 0 6px; font-size: 14px; }
+  .detail-card .kv { color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+  .detail-card .kv b { color: var(--ink); }
+  #pattern-graph svg { display: block; margin: 6px auto 0; border: 1px solid var(--line);
+                       border-radius: 8px; background: #fff; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px;
+      margin-right: 4px; border-radius: 2px; vertical-align: -1px; }
+  .legend .l-fact::before { background: var(--fact); }
+  .legend .l-rule::before { background: var(--rule); border-radius: 50%; }
+  .legend .l-final::before { background: var(--final); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line);
+           vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #fff; }
+  tr.prow { cursor: pointer; }
+  tr.prow:hover td { background: #f2f5fb; }
+  .badge { display: inline-block; background: #eef1f8; color: var(--ink); border-radius: 10px;
+           padding: 1px 8px; font-size: 11px; margin-right: 4px; }
+  .scroll { max-height: 420px; overflow-y: auto; border: 1px solid var(--line);
+            border-radius: 8px; }
+  #error { color: var(--rule); font-size: 13px; padding: 8px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>规则复用与频繁子图挖掘</h1>
+  <div class="meta" id="meta">加载中…</div>
+</header>
+<main>
+  <section class="panel" id="panel-reuse">
+    <h2>规则复用统计（数据集级）</h2>
+    <div class="sub">Top 30 规则按总应用次数排序；点击查看该规则的复用详情</div>
+    <div class="chart" id="chart-reuse"></div>
+    <div class="detail-card" id="rule-detail"></div>
+  </section>
+  <section class="panel" id="panel-patterns">
+    <h2>频繁子图统计（复用数量 = 包含该子图的证明数）</h2>
+    <div class="sub">Top 30 频繁子图；点击柱条在下方渲染子图结构</div>
+    <div class="chart" id="chart-patterns"></div>
+    <div class="detail-card" id="pattern-detail">
+      <h3 id="pd-name"></h3>
+      <div class="kv" id="pd-kv"></div>
+      <div class="legend" style="margin-top:8px">
+        <span class="l-rule">规则节点</span>
+        <span class="l-fact">事实节点</span>
+        <span class="l-final">最终结论</span>
+      </div>
+      <div id="pattern-graph"></div>
+    </div>
+  </section>
+</main>
+<section class="panel" style="margin:0 22px 22px">
+  <h2>频繁子图明细表（Top 50）</h2>
+  <div class="sub">点击行可在右侧渲染该子图；"复合规则骨架"即 rules.txt 风格回写（点变量统一待做）</div>
+  <div class="scroll"><table id="pattern-table">
+    <thead><tr><th>#</th><th>子图命名</th><th>复用数量</th><th>边/节点</th><th>复合规则骨架</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</section>
+<div id="error"></div>
+
+<script>
+const META = document.getElementById("meta");
+const ERR = document.getElementById("error");
+let DATA = null;
+
+const TYPE_COLOR = {
+  "rule:": "#e45756",
+  "initial_fact:": "#4c78a8",
+  "derived_fact:": "#7a8fb8",
+  "final_fact:": "#54a24b",
+};
+function colorOf(label) {
+  for (const k in TYPE_COLOR) if (label.startsWith(k)) return TYPE_COLOR[k];
+  return "#8a8f9d";
+}
+function shapeOf(label) {
+  if (label.startsWith("rule:")) return "diamond";
+  return "circle";
+}
+function shortLabel(label) {
+  return label.includes(":") ? label.split(":").slice(1).join(":") : label;
+}
+
+function renderMeta() {
+  const m = DATA.meta;
+  META.innerHTML = [
+    `<span>数据集 <b>${m.dataset.split("/").pop()}</b></span>`,
+    `<span>解析行数 <b>${m.parsed_rows.toLocaleString()}</b></span>`,
+    `<span>去重图结构 <b>${m.distinct_graphs.toLocaleString()}</b></span>`,
+    `<span>频繁子图 <b>${(DATA.frequent_pattern_total || DATA.frequent_patterns.length).toLocaleString()}</b></span>`,
+    `<span>min_support <b>${m.min_support}</b> · max_edges <b>${m.max_edges}</b></span>`,
+    `<span>耗时 <b>${m.elapsed_seconds}s</b></span>`,
+  ].join(" · ");
+}
+
+function renderRuleChart() {
+  const rules = DATA.rule_usage.slice(0, 30);
+  const W = 520, rowH = 20, top = 8;
+  const H = top + rules.length * rowH + 44;
+  const maxInst = d3.max(rules, d => d.instances) || 1;
+  const svg = d3.select("#chart-reuse").html("").append("svg")
+    .attr("viewBox", `0 0 ${W} ${H}`).attr("height", H);
+  const x = d3.scaleLinear().domain([0, maxInst]).range([0, W - 210]);
+  const g = svg.append("g").attr("transform", `translate(150,${top})`);
+  const bars = g.selectAll("g.bar").data(rules).join("g").attr("class", "bar")
+    .attr("transform", (d, i) => `translate(0,${i * rowH})`)
+    .on("click", (ev, d) => showRuleDetail(d));
+  bars.append("rect").attr("height", rowH - 3).attr("width", d => x(d.instances))
+    .attr("fill", "#4c78a8").attr("rx", 2);
+  bars.append("text").attr("class", "bar-label").attr("x", -6).attr("y", rowH - 8)
+    .attr("text-anchor", "end").text(d => d.name);
+  bars.append("text").attr("class", "bar-label").attr("x", d => x(d.instances) + 4)
+    .attr("y", rowH - 8).attr("fill", "#555").text(d => d.instances);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(150,${top + rules.length * rowH})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")));
+}
+
+function showRuleDetail(r) {
+  const card = document.getElementById("rule-detail");
+  card.classList.add("visible");
+  card.innerHTML = `
+    <h3>规则 ${r.name}</h3>
+    <div class="kv">
+      出现的证明数 <b>${r.proofs}</b> · 总应用次数 <b>${r.instances}</b> ·
+      平均每次证明应用 <b>${r.avg_per_proof}</b><br>
+      推出的结论谓词：<b>${(r.conclusions || []).join(", ") || "—"}</b>
+    </div>`;
+}
+
+function renderPatternChart() {
+  const pats = DATA.frequent_patterns.slice(0, 30);
+  if (!pats.length) { d3.select("#chart-patterns").html('<div class="sub">无频繁模式</div>'); return; }
+  const W = 560, rowH = 20, top = 8;
+  const H = top + pats.length * rowH + 44;
+  const maxSup = d3.max(pats, d => d.support) || 1;
+  const svg = d3.select("#chart-patterns").html("").append("svg")
+    .attr("viewBox", `0 0 ${W} ${H}`).attr("height", H);
+  const x = d3.scaleLinear().domain([0, maxSup]).range([0, W - 250]);
+  const g = svg.append("g").attr("transform", `translate(190,${top})`);
+  const bars = g.selectAll("g.bar").data(pats).join("g").attr("class", "bar")
+    .attr("transform", (d, i) => `translate(0,${i * rowH})`)
+    .on("click", (ev, d) => showPattern(d));
+  bars.append("rect").attr("height", rowH - 3).attr("width", d => x(d.support))
+    .attr("fill", "#e45756").attr("rx", 2);
+  bars.append("text").attr("class", "bar-label").attr("x", -6).attr("y", rowH - 8)
+    .attr("text-anchor", "end").text(d => d.name.length > 34 ? d.name.slice(0, 33) + "…" : d.name);
+  bars.append("text").attr("class", "bar-label").attr("x", d => x(d.support) + 4)
+    .attr("y", rowH - 8).attr("fill", "#555").text(d => d.support);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(190,${top + pats.length * rowH})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")));
+}
+
+function showPattern(p) {
+  const card = document.getElementById("pattern-detail");
+  card.classList.add("visible");
+  document.getElementById("pd-name").textContent = p.name;
+  document.getElementById("pd-kv").innerHTML =
+    `复用数量 <b>${p.support}</b> · 边数 <b>${p.n_edges}</b> · 节点数 <b>${p.n_nodes}</b><br>` +
+    `复合规则骨架：<b>${p.rule_text ? p.rule_text.replace(/\n/g, " ；") : "（非单规则星型，无法直接回写）"}</b>`;
+  renderPatternGraph(p);
+}
+
+function renderPatternGraph(p) {
+  const W = 460, H = 300;
+  const svg = d3.select("#pattern-graph").html("").append("svg")
+    .attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`);
+  const nodes = p.nodes.map(n => ({ ...n }));
+  const links = p.edges.map(e => ({ source: e.source, target: e.target, label: e.label }));
+  const sim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(70).strength(0.6))
+    .force("charge", d3.forceManyBody().strength(-220))
+    .force("center", d3.forceCenter(W / 2, H / 2))
+    .force("collide", d3.forceCollide(18));
+  const link = svg.append("g").selectAll("line").data(links).join("line")
+    .attr("stroke", "#b9c0d0").attr("stroke-width", 1.4);
+  const node = svg.append("g").selectAll("g").data(nodes).join("g").call(
+    d3.drag().on("start", (ev, d) => { if (!ev.active) sim.alphaTarget(0.25).restart(); d.fx = d.x; d.fy = d.y; })
+      .on("drag", (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+      .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+  );
+  node.append("path").attr("d", d => shapeOf(d.label) === "diamond"
+      ? "M0,-11 L11,0 L0,11 L-11,0 Z" : d3.symbol().type(d3.symbolCircle).size(260)())
+    .attr("fill", d => colorOf(d.label)).attr("stroke", "#fff").attr("stroke-width", 1.5);
+  node.append("text").attr("y", 24).attr("text-anchor", "middle").attr("class", "bar-label")
+    .text(d => shortLabel(d.label));
+  node.append("title").text(d => d.label);
+  sim.on("tick", () => {
+    link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+}
+
+function renderTable() {
+  const pats = DATA.frequent_patterns.slice(0, 50);
+  const tbody = d3.select("#pattern-table tbody").html("");
+  tbody.selectAll("tr").data(pats).join("tr").attr("class", "prow")
+    .on("click", (ev, d) => { showPattern(d); document.getElementById("panel-patterns").scrollIntoView({ behavior: "smooth" }); })
+    .html(d => `
+      <td>${pats.indexOf(d) + 1}</td>
+      <td>${d.name}</td>
+      <td><b>${d.support}</b></td>
+      <td>${d.n_edges} 边 / ${d.n_nodes} 节点</td>
+      <td>${d.rule_text ? "<code style='font-size:11px'>" + d.rule_text.replace(/\n/g, " ；") + "</code>" : "—"}</td>`);
+}
+
+fetch("/api/mining/results")
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(data => {
+    DATA = data;
+    renderMeta(); renderRuleChart(); renderPatternChart(); renderTable();
+  })
+  .catch(e => {
+    ERR.style.display = "block";
+    ERR.textContent = "结果加载失败：" + e.message +
+      "（请先在服务器上运行 python3 -m rule_mining --dataset <jsonl> 生成挖掘缓存）";
+    document.getElementById("meta").textContent = "无数据";
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+{
+  "data_path": "src/newclid/visualization/json_output",
+  "rows": 3,
+  "reuse_dataset": [
+    {
+      "name": "a01",
+      "proofs": 3,
+      "instances": 5,
+      "avg_per_proof": 1.67,
+      "conclusions": [
+        "eqangle"
+      ]
+    },
+    {
+      "name": "a00",
+      "proofs": 1,
+      "instances": 3,
+      "avg_per_proof": 3.0,
+      "conclusions": [
+        "eqratio"
+      ]
+    },
+    {
+      "name": "r53",
+      "proofs": 1,
+      "instances": 2,
+      "avg_per_proof": 2.0,
+      "conclusions": [
+        "eqangle"
+      ]
+    },
+    {
+      "name": "r61",
+      "proofs": 1,
+      "instances": 2,
+      "avg_per_proof": 2.0,
+      "conclusions": [
+        "simtrir"
+      ]
+    },
+    {
+      "name": "r34",
+      "proofs": 1,
+      "instances": 1,
+      "avg_per_proof": 1.0,
+      "conclusions": [
+        "simtri"
+      ]
+    },
+    {
+      "name": "r35",
+      "proofs": 1,
+      "instances": 1,
+      "avg_per_proof": 1.0,
+      "conclusions": [
+        "simtrir"
+      ]
+    }
+  ],
+  "reuse_summary": [
+    {
+      "distinct_rules": 2,
+      "rule_instances": 3,
+      "reused_rules": 1,
+      "reused_rule_names": [
+        "a01"
+      ],
+      "redundant_facts": 0,
+      "max_fact_fanout": 1
+    },
+    {
+      "distinct_rules": 2,
+      "rule_instances": 3,
+      "reused_rules": 1,
+      "reused_rule_names": [
+        "a01"
+      ],
+      "redundant_facts": 0,
+      "max_fact_fanout": 2
+    },
+    {
+      "distinct_rules": 4,
+      "rule_instances": 8,
+      "reused_rules": 3,
+      "reused_rule_names": [
+        "a00",
+        "r53",
+        "r61"
+      ],
+      "redundant_facts": 0,
+      "max_fact_fanout": 2
+    }
+  ],
+  "mining_params": {
+    "min_support": 1,
+    "max_edges": 4
+  },
+  "frequent_patterns": [
+    {
+      "support": 3,
+      "n_nodes": 2,
+      "n_edges": 1,
+      "signature": "derived_fact:eqangle --conclusion-> rule:a01",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "derived_fact:eqangle"
+        },
+        {
+          "id": 1,
+          "label": "rule:a01"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 1,
+          "label": "conclusion"
+        }
+      ],
+      "rule_text": null,
+      "occurrences": [
+        {
+          "host": "proof_row0.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row1.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 1
+        }
+      ]
+    },
+    {
+      "support": 2,
+      "n_nodes": 2,
+      "n_edges": 1,
+      "signature": "initial_fact:coll --premise-> rule:a01",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "initial_fact:coll"
+        },
+        {
+          "id": 1,
+          "label": "rule:a01"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 1,
+          "label": "premise"
+        }
+      ],
+      "rule_text": null,
+      "occurrences": [
+        {
+          "host": "proof_row1.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 1
+        }
+      ]
+    },
+    {
+      "support": 2,
+      "n_nodes": 2,
+      "n_edges": 1,
+      "signature": "initial_fact:perp --premise-> rule:a01",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "initial_fact:perp"
+        },
+        {
+          "id": 1,
+          "label": "rule:a01"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 1,
+          "label": "premise"
+        }
+      ],
+      "rule_text": null,
+      "occurrences": [
+        {
+          "host": "proof_row1.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 1
+        }
+      ]
+    },
+    {
+      "support": 2,
+      "n_nodes": 3,
+      "n_edges": 2,
+      "signature": "derived_fact:eqangle --conclusion-> rule:a01 ; rule:a01 --premise-> initial_fact:coll",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "derived_fact:eqangle"
+        },
+        {
+          "id": 1,
+          "label": "initial_fact:coll"
+        },
+        {
+          "id": 2,
+          "label": "rule:a01"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 2,
+          "label": "conclusion"
+        },
+        {
+          "source": 1,
+          "target": 2,
+          "label": "premise"
+        }
+      ],
+      "rule_text": "mined_a01_sup2 mined composite rule (skeleton, point-unification TODO)\ncoll => eqangle",
+      "occurrences": [
+        {
+          "host": "proof_row1.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 1
+        }
+      ]
+    },
+    {
+      "support": 2,
+      "n_nodes": 3,
+      "n_edges": 2,
+      "signature": "derived_fact:eqangle --conclusion-> rule:a01 ; rule:a01 --premise-> initial_fact:perp",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "derived_fact:eqangle"
+        },
+        {
+          "id": 1,
+          "label": "initial_fact:perp"
+        },
+        {
+          "id": 2,
+          "label": "rule:a01"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 2,
+          "label": "conclusion"
+        },
+        {
+          "source": 1,
+          "target": 2,
+          "label": "premise"
+        }
+      ],
+      "rule_text": "mined_a01_sup2 mined composite rule (skeleton, point-unification TODO)\nperp => eqangle",
+      "occurrences": [
+        {
+          "host": "proof_row1.json",
+          "count_in_host": 2
+        },
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 1
+        }
+      ]
+    },
+    {
+      "support": 1,
+      "n_nodes": 2,
+      "n_edges": 1,
+      "signature": "derived_fact:eqangle --conclusion-> rule:r53",
+      "nodes": [
+        {
+          "id": 0,
+          "label": "derived_fact:eqangle"
+        },
+        {
+          "id": 1,
+          "label": "rule:r53"
+        }
+      ],
+      "edges": [
+        {
+          "source": 0,
+          "target": 1,
+          "label": "conclusion"
+        }
+      ],
+      "rule_text": null,
+      "occurrences": [
+        {
+          "host": "proof_row2.json",
+          "count_in_host": 2
+        }
+      ]
+    }
+  ]
+}
